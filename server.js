@@ -5,20 +5,19 @@ const crypto = require('crypto');
 const app = express();
 app.use(express.json());
 
-// Load API key and secret from environment variables
-const API_KEY = process.env.API_KEY;
-const API_SECRET = process.env.API_SECRET;
-
-// Health check route for Render to verify the app is alive
+// Health check endpoint — required by Render
 app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
 
-// Proxy endpoint for 3Commas API requests
+// Environment variables (API keys)
+const API_KEY = process.env.API_KEY;
+const API_SECRET = process.env.API_SECRET;
+
 app.post('/3commas', async (req, res) => {
   const { path, body } = req.body;
+
   const payload = JSON.stringify(body || {});
-  
   const signature = crypto
     .createHmac('sha256', API_SECRET)
     .update(payload)
@@ -34,15 +33,15 @@ app.post('/3commas', async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    res.status(error.response?.status || 500).json({
+    res.status(500).json({
       error: error.message,
-      details: error.response?.data || 'Unknown error'
+      details: error.response?.data || null
     });
   }
 });
 
-// Start server
+// Use the correct port required by Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Proxy running on port ${PORT}`);
+  console.log(`✅ Proxy server is running on port ${PORT}`);
 });
